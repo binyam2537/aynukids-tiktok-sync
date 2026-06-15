@@ -1,0 +1,43 @@
+name: AynuKids Content Sync
+
+on:
+  schedule:
+    # Runs at minute 0 past every 6th hour
+    - cron: '0 */6 * * *'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  sync-tiktok-content:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # caching pip dependencies
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          
+      # Install yt-dlp to latest to avoid breaking changes from TikTok
+      - name: Update yt-dlp
+        run: |
+          pip install -U yt-dlp
+          
+      - name: Run Scraping Pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TIKTOK_HANDLE: 'aynukids'
+          CHANNEL_PROVIDER: 'ytdlp'
+          SOUND_PROVIDER: 'ytdlp'
+        run: |
+          cd backend
+          python main.py
