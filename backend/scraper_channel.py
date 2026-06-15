@@ -37,7 +37,13 @@ def run_stream_a() -> Dict[str, Any]:
             stats["status"] = "success"
             return stats
 
+        existing_ids = db.get_existing_video_ids()
+
         for video in videos:
+            if str(video["id"]) in existing_ids:
+                # Skip already processed videos to speed up the run
+                continue
+
             # Add randomized delay between oEmbed requests to be polite
             delay = random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX)
             time.sleep(delay)
@@ -49,6 +55,14 @@ def run_stream_a() -> Dict[str, Any]:
                 video["thumbnail_url"] = oembed_data["thumbnail_url"]
                 video["embed_html"] = oembed_data["embed_html"]
                 video["author_name"] = oembed_data["author_name"]
+                
+                # Try to extract sound_id from embed HTML if yt-dlp missed it
+                if not video.get("sound_id") and video.get("embed_html"):
+                    import re
+                    match = re.search(r'music/.*?-(?P<sound_id>\d+)', video["embed_html"])
+                    if match:
+                        video["sound_id"] = match.group("sound_id")
+                        logger.info(f"Extracted sound_id {video['sound_id']} from oEmbed HTML")
             
             # Save sound to db if discovered
             if video.get("sound_id"):

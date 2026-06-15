@@ -33,6 +33,7 @@ def run_stream_b() -> Dict[str, Any]:
         logger.info(f"Found {len(active_sounds)} active sounds to track.")
         
         provider = get_sound_provider()
+        existing_ids = db.get_existing_community_video_ids()
         
         for sound in active_sounds:
             sound_id = sound["id"]
@@ -43,6 +44,9 @@ def run_stream_b() -> Dict[str, Any]:
             stats["videos_found"] += len(videos)
             
             for video in videos:
+                if str(video["id"]) in existing_ids:
+                    continue
+
                 # Add randomized delay between oEmbed requests to be polite
                 delay = random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX)
                 time.sleep(delay)

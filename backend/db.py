@@ -37,6 +37,24 @@ class Database:
             logger.error(f"Failed to fetch active sounds: {e}")
             raise
 
+    def get_existing_video_ids(self) -> set:
+        """Get a set of all video IDs currently in the database to avoid re-fetching."""
+        try:
+            response = self.client.table("videos").select("id").execute()
+            return {item["id"] for item in response.data}
+        except Exception as e:
+            logger.error(f"Failed to fetch existing video IDs: {e}")
+            return set()
+
+    def get_existing_community_video_ids(self) -> set:
+        """Get a set of all community video IDs currently in the database."""
+        try:
+            response = self.client.table("community_videos").select("id").execute()
+            return {item["id"] for item in response.data}
+        except Exception as e:
+            logger.error(f"Failed to fetch existing community video IDs: {e}")
+            return set()
+
     def upsert_community_video(self, video_data: Dict[str, Any]) -> None:
         """Upsert a community video. Does not overwrite approval_status if it already exists."""
         try:
